@@ -3,6 +3,8 @@ package org.example.ui;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -28,6 +30,8 @@ public class MainController {
     @FXML private Button addBtn;
     @FXML private Button editBtn;
     @FXML private Button deleteBtn;
+    @FXML private TextField searchField;
+
 
     // Table (liste)
     @FXML private TableView<Job> table;
@@ -73,28 +77,33 @@ public class MainController {
         }
 
         onRefresh();
+
     }
 
     @FXML
     public void initialize() {
-        // Colonnes TableView
+        // 1) Bind des colonnes -> comment afficher les propriétés de Job
         idCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getJobId()));
-        titleCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTitle()));
-        typeCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getWorkType()));
+        titleCol.setCellValueFactory(c -> new SimpleStringProperty(nz(c.getValue().getJobTitle())));
+        typeCol.setCellValueFactory(c -> new SimpleStringProperty(nz(c.getValue().getWorkType())));
         dateCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getPostingDate()));
-        companyCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCompanyName()));
+        companyCol.setCellValueFactory(c -> new SimpleStringProperty(nz(c.getValue().getCompanyName())));
 
-        // Listener selection -> charger détails
-        table.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-            if (newV == null) {
-                clearDetails();
-            } else {
-                loadDetails(newV.getJobId());
-            }
+        // 2) Filtrage (search)
+        filteredData = new FilteredList<>(masterData, p -> true);
+        table.setItems(filteredData);
+
+        // 3) Affichage détails quand on sélectionne une ligne
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldV, job) -> {
+            if (job == null) clearDetails();
+            else loadDetails(job.getJobId());
         });
 
-        clearDetails();
+        // 4) Entrée = lancer la recherche
+        searchField.setOnAction(e -> onSearch());
     }
+
+
 
     private void applyPrivileges(String role) {
         String r = (role == null) ? "" : role.toLowerCase();
@@ -111,17 +120,14 @@ public class MainController {
     @FXML
     public void onRefresh() {
         try {
-            List<Job> jobs = jobDao.findAll();
-            table.setItems(FXCollections.observableArrayList(jobs));
-            if (!jobs.isEmpty()) {
-                table.getSelectionModel().selectFirst();
-            } else {
-                clearDetails();
-            }
+            masterData.setAll(jobDao.findAll()); // ou ta méthode existante
+            // si un filtre est déjà dans le champ, on le réapplique
+            onSearch();
         } catch (Exception e) {
-            new Alert(Alert.AlertType.ERROR, "Refresh error: " + e.getMessage()).showAndWait();
+            showDbError("Refresh error", e);
         }
     }
+
 
     private void loadDetails(int jobId) {
         try {
@@ -211,6 +217,45 @@ public class MainController {
             showDbError("Delete", e);
         }
     }
+
+    @FXML
+    public void onSearch() {
+        String q = (searchField.getText() == null) ? "" : searchField.getText().trim().toLowerCase();
+
+        if (q.isEmpty()) {
+            filteredData.setPredicate(j -> true);
+            return;
+        }
+
+        // si l’utilisateur tape un nombre, on tente une recherche par ID
+        Integer idQuery = null;
+        try {
+            idQuery = Integer.parseInt(q);
+        } catch (NumberFormatException ignored) {
+        }
+
+        Integer finalIdQuery = idQuery;
+
+        filteredData.setPredicate(job -> {
+            if (job == null) return false;
+
+            // recherche par ID
+            if (finalIdQuery != null && job.getJobId() == finalIdQuery) {
+                return true;
+            }
+
+            String title = job.getJobTitle() == null ? "" : job.getJobTitle().toLowerCase();
+            String company = job.getCompanyName() == null ? "" : job.getCompanyName().toLowerCase();
+
+            return title.contains(q) || company.contains(q);
+        });
+    }
+
+
+    private final ObservableList<Job> masterData = FXCollections.observableArrayList();
+    private FilteredList<Job> filteredData;
+
+
 
     /**
      * Ouvre le dialog job_form.fxml.
