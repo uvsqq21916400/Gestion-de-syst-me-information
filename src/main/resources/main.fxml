@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -16,22 +17,88 @@
             <Button fx:id="editBtn" text="Edit" onAction="#onEdit"/>
             <Button fx:id="deleteBtn" text="Delete" onAction="#onDelete"/>
 
+            <Separator orientation="VERTICAL"/>
+
             <Button text="Refresh" onAction="#onRefresh"/>
             <Button text="Logout" onAction="#onLogout"/>
         </ToolBar>
     </top>
 
     <center>
-        <TableView fx:id="table">
-            <columns>
-                <TableColumn fx:id="idCol" text="ID" prefWidth="70"/>
-                <TableColumn fx:id="titleCol" text="Title" prefWidth="320"/>
-                <TableColumn fx:id="typeCol" text="Work Type" prefWidth="140"/>
-                <TableColumn fx:id="dateCol" text="Posting Date" prefWidth="140"/>
-                <TableColumn fx:id="companyCol" text="Company" prefWidth="240"/>
-            </columns>
-        </TableView>
+        <SplitPane dividerPositions="0.58">
+
+            <!-- GAUCHE : TABLE -->
+            <VBox spacing="8" VBox.vgrow="ALWAYS">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+
+                <Label text="Jobs" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                <TableView fx:id="table" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="idCol" text="ID" prefWidth="70"/>
+                        <TableColumn fx:id="titleCol" text="Title" prefWidth="320"/>
+                        <TableColumn fx:id="typeCol" text="Work Type" prefWidth="140"/>
+                        <TableColumn fx:id="dateCol" text="Posting Date" prefWidth="140"/>
+                        <TableColumn fx:id="companyCol" text="Company" prefWidth="240"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <!-- DROITE : DETAILS -->
+            <ScrollPane fitToWidth="true">
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="12" right="12" bottom="12" left="12"/>
+                    </padding>
+
+                    <Label text="Détails du job" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+
+                    <GridPane hgap="10" vgap="8">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="110"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <Label text="Titre:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <Label fx:id="dTitle" wrapText="true" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                        <Label text="Role:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <Label fx:id="dRole" wrapText="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                        <Label text="Work type:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <Label fx:id="dWorkType" wrapText="true" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                        <Label text="Salaire:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <Label fx:id="dSalary" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                        <Label text="Date:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                        <Label fx:id="dDate" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                        <Label text="Company:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                        <Label fx:id="dCompany" wrapText="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+                        <Label text="Location:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                        <Label fx:id="dLocation" wrapText="true" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+                        <Label text="Portal:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                        <Label fx:id="dPortal" wrapText="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+                    </GridPane>
+
+                    <Separator/>
+
+                    <Label text="Description:"/>
+                    <TextArea fx:id="dDesc" editable="false" wrapText="true" prefRowCount="5"/>
+
+                    <Label text="Responsibilities:"/>
+                    <TextArea fx:id="dResp" editable="false" wrapText="true" prefRowCount="5"/>
+
+                    <Label text="Benefits:"/>
+                    <TextArea fx:id="dBenefits" editable="false" wrapText="true" prefRowCount="5"/>
+                </VBox>
+            </ScrollPane>
+
+        </SplitPane>
     </center>
 
 </BorderPane>
-

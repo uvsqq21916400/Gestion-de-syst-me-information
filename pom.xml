@@ -67,9 +67,10 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>${main.class}</mainClass>
+                    <mainClass>org.example.MainApp</mainClass>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 </project>

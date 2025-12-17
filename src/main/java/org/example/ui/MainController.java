@@ -1,7 +1,5 @@
 package org.example.ui;
 
-import org.example.dao.JobDao;
-import org.example.model.Job;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -9,18 +7,29 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.example.dao.CompanyDao;
+import org.example.dao.JobDao;
+import org.example.dao.LocationDao;
+import org.example.model.Company;
+import org.example.model.Job;
+import org.example.model.JobDetails;
+import org.example.model.Location;
 
 import java.sql.Connection;
 import java.util.List;
+import java.util.Optional;
 
 public class MainController {
 
+    // Top bar
     @FXML private Label roleLabel;
     @FXML private Button addBtn;
     @FXML private Button editBtn;
     @FXML private Button deleteBtn;
 
+    // Table (liste)
     @FXML private TableView<Job> table;
     @FXML private TableColumn<Job, Integer> idCol;
     @FXML private TableColumn<Job, String> titleCol;
@@ -28,37 +37,71 @@ public class MainController {
     @FXML private TableColumn<Job, Object> dateCol;
     @FXML private TableColumn<Job, String> companyCol;
 
+    // Panneau détails (droite)
+    @FXML private Label dTitle, dRole, dWorkType, dSalary, dDate, dCompany, dLocation, dPortal;
+    @FXML private TextArea dDesc, dResp, dBenefits;
+
     private Connection cn;
     private String role;
-    private JobDao jobDao;
 
+    private JobDao jobDao;
+    private CompanyDao companyDao;
+    private LocationDao locationDao;
+
+    // cache locations pour afficher un libellé propre
+    private List<Location> cachedLocations = List.of();
+
+    /**
+     * Appelé depuis LoginController après login OK.
+     */
     public void setSession(Connection cn, String role) {
         this.cn = cn;
         this.role = role;
+
         this.jobDao = new JobDao(cn);
+        this.companyDao = new CompanyDao(cn);
+        this.locationDao = new LocationDao(cn);
 
         roleLabel.setText("Role: " + role);
         applyPrivileges(role);
+
+        // charger cache locations (pour afficher dLocation)
+        try {
+            cachedLocations = locationDao.findAll();
+        } catch (Exception ignored) {
+            cachedLocations = List.of();
+        }
+
         onRefresh();
     }
 
     @FXML
     public void initialize() {
+        // Colonnes TableView
         idCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getJobId()));
         titleCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTitle()));
         typeCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getWorkType()));
         dateCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getPostingDate()));
         companyCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCompanyName()));
+
+        // Listener selection -> charger détails
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) {
+                clearDetails();
+            } else {
+                loadDetails(newV.getJobId());
+            }
+        });
+
+        clearDetails();
     }
 
     private void applyPrivileges(String role) {
-        // Exemple (à adapter à vos comptes):
-        // admin/gestionnaire: CRUD
-        // recruteur: update seulement
-        // standard: read-only
-        boolean canInsert = role.contains("admin") || role.contains("gestionnaire");
-        boolean canUpdate = canInsert || role.contains("recruteur");
-        boolean canDelete = role.contains("admin") || role.contains("gestionnaire");
+        String r = (role == null) ? "" : role.toLowerCase();
+
+        boolean canInsert = r.contains("admin") || r.contains("gestionnaire");
+        boolean canUpdate = canInsert || r.contains("recruteur");
+        boolean canDelete = r.contains("admin") || r.contains("gestionnaire");
 
         addBtn.setDisable(!canInsert);
         editBtn.setDisable(!canUpdate);
@@ -70,32 +113,200 @@ public class MainController {
         try {
             List<Job> jobs = jobDao.findAll();
             table.setItems(FXCollections.observableArrayList(jobs));
+            if (!jobs.isEmpty()) {
+                table.getSelectionModel().selectFirst();
+            } else {
+                clearDetails();
+            }
         } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, "Refresh error: " + e.getMessage()).showAndWait();
         }
     }
 
-    // Bonus: on laisse ces actions en place (pas encore implémentées)
+    private void loadDetails(int jobId) {
+        try {
+            JobDetails d = jobDao.findDetailsById(jobId);
+            if (d == null) {
+                clearDetails();
+                return;
+            }
+
+            dTitle.setText(nz(d.getJobTitle()));
+            dRole.setText(nz(d.getRole()));
+            dWorkType.setText(nz(d.getWorkType()));
+            dSalary.setText(nz(d.getSalaryRange()));
+            dDate.setText(d.getPostingDate() == null ? "" : d.getPostingDate().toString());
+            dCompany.setText(nz(d.getCompanyName()));
+            dPortal.setText(nz(d.getJobPortal()));
+
+            dLocation.setText(locationLabel(d.getLocationId()));
+
+            dDesc.setText(nz(d.getJobDescription()));
+            dResp.setText(nz(d.getResponsibilities()));
+            dBenefits.setText(nz(d.getBenefits()));
+
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, "Load details error: " + e.getMessage()).showAndWait();
+        }
+    }
+
     @FXML
     public void onAdd() {
-        new Alert(Alert.AlertType.INFORMATION, "Add: à implémenter (INSERT)").showAndWait();
+        try {
+            JobDetails created = openJobDialog(null);
+            if (created == null) return;
+
+            jobDao.insert(created);
+            onRefresh();
+        } catch (Exception e) {
+            showDbError("Insert", e);
+        }
     }
 
     @FXML
     public void onEdit() {
-        new Alert(Alert.AlertType.INFORMATION, "Edit: à implémenter (UPDATE)").showAndWait();
+        Job selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            new Alert(Alert.AlertType.WARNING, "Sélectionne un job d'abord.").showAndWait();
+            return;
+        }
+
+        try {
+            JobDetails existing = jobDao.findDetailsById(selected.getJobId());
+            if (existing == null) {
+                new Alert(Alert.AlertType.WARNING, "Impossible de charger les détails pour ce job.").showAndWait();
+                return;
+            }
+
+            JobDetails updated = openJobDialog(existing);
+            if (updated == null) return;
+
+            jobDao.update(updated);
+            onRefresh();
+        } catch (Exception e) {
+            showDbError("Update", e);
+        }
     }
 
     @FXML
     public void onDelete() {
-        new Alert(Alert.AlertType.INFORMATION, "Delete: à implémenter (DELETE)").showAndWait();
+        Job selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            new Alert(Alert.AlertType.WARNING, "Sélectionne un job d'abord.").showAndWait();
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm delete");
+        confirm.setHeaderText("Supprimer job #" + selected.getJobId() + " ?");
+        confirm.setContentText(selected.getJobTitle());
+
+        Optional<ButtonType> res = confirm.showAndWait();
+        if (res.isEmpty() || res.get() != ButtonType.OK) return;
+
+        try {
+            jobDao.delete(selected.getJobId());
+            onRefresh();
+        } catch (Exception e) {
+            showDbError("Delete", e);
+        }
+    }
+
+    /**
+     * Ouvre le dialog job_form.fxml.
+     * @param editing null = Add, sinon Edit (pré-rempli)
+     * @return JobDetails à sauvegarder (ou null si cancel)
+     */
+    private JobDetails openJobDialog(JobDetails editing) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/job_form.fxml"));
+        Scene formScene = new Scene(loader.load(), 780, 640);
+
+        JobFormController fc = loader.getController();
+
+        // Lookups FK
+        List<Company> companies = companyDao.findAll();
+        List<Location> locations = locationDao.findAll();
+        cachedLocations = locations; // refresh cache pour dLocation
+        fc.setLookups(companies, locations);
+
+        if (editing != null) {
+            fc.setEditing(editing);
+            fc.selectCompanyByName(editing.getCompanyName());
+            fc.selectLocationById(editing.getLocationId());
+        }
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(editing == null ? "Add Job" : "Edit Job");
+        dialog.getDialogPane().setContent(formScene.getRoot());
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        // Validation avant OK
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            String err = fc.validateForm();
+            if (err != null) {
+                ev.consume();
+                new Alert(Alert.AlertType.WARNING, err).showAndWait();
+            }
+        });
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK) return null;
+
+        JobDetails toSave = fc.buildDetailsToSave();
+
+        // Si edit : forcer l'ID original
+        if (editing != null) {
+            toSave = new JobDetails(
+                    editing.getJobId(),
+                    toSave.getRole(),
+                    toSave.getWorkType(),
+                    toSave.getSalaryRange(),
+                    toSave.getPostingDate(),
+                    toSave.getJobTitle(),
+                    toSave.getJobPortal(),
+                    toSave.getJobDescription(),
+                    toSave.getResponsibilities(),
+                    toSave.getBenefits(),
+                    toSave.getCompanyName(),
+                    toSave.getLocationId()
+            );
+        }
+
+        return toSave;
+    }
+
+    private void showDbError(String action, Exception e) {
+        new Alert(Alert.AlertType.ERROR, action + " error: " + e.getMessage()).showAndWait();
+    }
+
+    private String nz(String s) { return (s == null) ? "" : s; }
+
+    private void clearDetails() {
+        dTitle.setText("");
+        dRole.setText("");
+        dWorkType.setText("");
+        dSalary.setText("");
+        dDate.setText("");
+        dCompany.setText("");
+        dLocation.setText("");
+        dPortal.setText("");
+        dDesc.setText("");
+        dResp.setText("");
+        dBenefits.setText("");
+    }
+
+    private String locationLabel(int locationId) {
+        for (Location l : cachedLocations) {
+            if (l.getLocationId() == locationId) return l.toString() + " (id=" + locationId + ")";
+        }
+        return "id=" + locationId;
     }
 
     @FXML
     public void onLogout() {
-        try {
-            if (cn != null) cn.close();
-        } catch (Exception ignored) {}
+        try { if (cn != null) cn.close(); } catch (Exception ignored) {}
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/login.fxml"));
@@ -109,4 +320,3 @@ public class MainController {
         }
     }
 }
-

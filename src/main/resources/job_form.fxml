@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane xmlns="http://javafx.com/javafx"
+          xmlns:fx="http://javafx.com/fxml"
+          fx:controller="org.example.ui.JobFormController"
+          hgap="10" vgap="10">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <columnConstraints>
+        <ColumnConstraints minWidth="130"/>
+        <ColumnConstraints hgrow="ALWAYS"/>
+    </columnConstraints>
+
+    <Label text="Job title" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <TextField fx:id="titleField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+    <Label text="Role" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+    <TextField fx:id="roleField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+    <Label text="Work type" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+    <ComboBox fx:id="workTypeBox" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+    <Label text="Salary range" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+    <TextField fx:id="salaryField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+    <Label text="Posting date" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+    <DatePicker fx:id="datePicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+    <Label text="Company" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+    <ComboBox fx:id="companyBox" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+    <Label text="Location" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+    <ComboBox fx:id="locationBox" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+    <Label text="Portal" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+    <TextField fx:id="portalField" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+
+    <Label text="Description" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+    <TextArea fx:id="descArea" wrapText="true" prefRowCount="3"
+              GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+
+    <Label text="Responsibilities" GridPane.rowIndex="9" GridPane.columnIndex="0"/>
+    <TextArea fx:id="respArea" wrapText="true" prefRowCount="3"
+              GridPane.rowIndex="9" GridPane.columnIndex="1"/>
+
+    <Label text="Benefits" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
+    <TextArea fx:id="benefitsArea" wrapText="true" prefRowCount="3"
+              GridPane.rowIndex="10" GridPane.columnIndex="1"/>
+
+</GridPane>
