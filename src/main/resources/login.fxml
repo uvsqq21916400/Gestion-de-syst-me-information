@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.example.ui.LoginController"
+      padding="20">
+
+    <Label text="Connexion à la base (JDBC)"
+           style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+    <TextField fx:id="urlField" promptText="JDBC URL"/>
+    <TextField fx:id="userField" promptText="DB user"/>
+    <PasswordField fx:id="passField" promptText="DB password"/>
+
+    <Button text="Se connecter" onAction="#onLogin"/>
+    <Label fx:id="statusLabel" text="" style="-fx-text-fill: #b00020;"/>
+
+</VBox>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.example.ui.MainController">
+
+    <top>
+        <ToolBar>
+            <Label fx:id="roleLabel" text="Role: ?" />
+            <Pane HBox.hgrow="ALWAYS"/>
+
+            <Button fx:id="addBtn" text="Add" onAction="#onAdd"/>
+            <Button fx:id="editBtn" text="Edit" onAction="#onEdit"/>
+            <Button fx:id="deleteBtn" text="Delete" onAction="#onDelete"/>
+
+            <Button text="Refresh" onAction="#onRefresh"/>
+            <Button text="Logout" onAction="#onLogout"/>
+        </ToolBar>
+    </top>
+
+    <center>
+        <TableView fx:id="table">
+            <columns>
+                <TableColumn fx:id="idCol" text="ID" prefWidth="70"/>
+                <TableColumn fx:id="titleCol" text="Title" prefWidth="320"/>
+                <TableColumn fx:id="typeCol" text="Work Type" prefWidth="140"/>
+                <TableColumn fx:id="dateCol" text="Posting Date" prefWidth="140"/>
+                <TableColumn fx:id="companyCol" text="Company" prefWidth="240"/>
+            </columns>
+        </TableView>
+    </center>
+
+</BorderPane>
+
