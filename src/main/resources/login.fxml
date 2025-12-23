@@ -14,7 +14,7 @@
     </padding>
 
     <Label prefHeight="36.0" prefWidth="230.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Connexion" />
-    <TextField fx:id="userField" promptText="Admin" />
+    <TextField fx:id="userField" promptText="Utilisateur" />
     <PasswordField fx:id="passField" promptText="Mots de passe" />
 
     <Button onAction="#onLogin" text="Se connecter" />
